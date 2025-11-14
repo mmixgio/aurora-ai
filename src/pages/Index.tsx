@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import TextGenerator from "@/components/TextGenerator";
-import ImageGenerator from "@/components/ImageGenerator";
 import OutputPanel from "@/components/OutputPanel";
+import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
@@ -13,7 +13,6 @@ const Index = () => {
   const [generatedText, setGeneratedText] = useState("");
 
   useEffect(() => {
-    // Check if user is logged in
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -24,7 +23,6 @@ const Index = () => {
     };
     checkUser();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session) {
         navigate("/auth");
@@ -40,35 +38,42 @@ const Index = () => {
     setGeneratedText(text);
   };
 
-  const handleImageGenerated = (imageUrl: string) => {
-    // Store image URL in localStorage for future reference
-    const savedImages = JSON.parse(localStorage.getItem('aurora-images') || '[]');
-    savedImages.push({ url: imageUrl, timestamp: new Date().toISOString() });
-    localStorage.setItem('aurora-images', JSON.stringify(savedImages));
-  };
-
   if (!user) {
-    return null; // Show nothing while checking auth
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       
-      <main className="container mx-auto px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[calc(100vh-8rem)]">
-          {/* Left Panel - Input Section */}
-          <div className="space-y-6 flex flex-col">
-            <TextGenerator onTextGenerated={handleTextGenerated} />
-            <ImageGenerator onImageGenerated={handleImageGenerated} />
+      <main className="container mx-auto px-6 py-12 flex-1">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-12 animate-fade-in">
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
+              Crea con l'AI
+            </h1>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Genera testo intelligente con Aurora, il tuo assistente creativo AI
+            </p>
           </div>
 
-          {/* Right Panel - Output Section */}
-          <div className="flex flex-col">
-            <OutputPanel generatedText={generatedText} />
+          {/* Two Column Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in">
+            {/* Left Column - Input */}
+            <div className="flex flex-col">
+              <TextGenerator onTextGenerated={handleTextGenerated} />
+            </div>
+
+            {/* Right Column - Output */}
+            <div className="flex flex-col">
+              <OutputPanel generatedText={generatedText} />
+            </div>
           </div>
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 };

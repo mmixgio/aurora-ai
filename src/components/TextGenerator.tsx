@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
-import { Sparkles, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TextGeneratorProps {
   onTextGenerated: (text: string) => void;
@@ -16,12 +16,12 @@ const TextGenerator = ({ onTextGenerated }: TextGeneratorProps) => {
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
-      toast.error("Please enter a prompt");
+      toast.error("Inserisci un prompt");
       return;
     }
 
     setIsGenerating(true);
-
+    
     try {
       const { data, error } = await supabase.functions.invoke('generate-text', {
         body: { prompt }
@@ -29,52 +29,50 @@ const TextGenerator = ({ onTextGenerated }: TextGeneratorProps) => {
 
       if (error) throw error;
 
-      if (data?.text) {
-        onTextGenerated(data.text);
-        toast.success("Text generated successfully!");
-        setPrompt("");
-      } else {
-        throw new Error("No text generated");
-      }
-    } catch (error: any) {
-      console.error('Text generation error:', error);
-      toast.error(error.message || "Failed to generate text");
+      const generatedText = data?.generatedText || data?.text || "";
+      onTextGenerated(generatedText);
+      toast.success("Testo generato con successo!");
+    } catch (error) {
+      console.error('Error generating text:', error);
+      toast.error("Errore durante la generazione del testo");
     } finally {
       setIsGenerating(false);
     }
   };
 
   return (
-    <Card className="p-6 space-y-4 shadow-md border border-border/50">
-      <div className="flex items-center gap-2 mb-2">
-        <Sparkles className="h-5 w-5 text-primary" />
-        <h3 className="text-lg font-semibold text-foreground">Text Generator</h3>
-      </div>
-      
-      <Textarea
-        placeholder="Describe what you want to create..."
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        className="min-h-[120px] resize-none border-border/50 focus:border-primary transition-colors"
-      />
-      
-      <Button 
-        onClick={handleGenerate}
-        disabled={isGenerating}
-        className="w-full bg-primary hover:bg-primary-hover text-primary-foreground transition-all duration-300 shadow-sm hover:shadow-md"
-      >
-        {isGenerating ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Generating...
-          </>
-        ) : (
-          <>
-            <Sparkles className="mr-2 h-4 w-4" />
-            Generate Text
-          </>
-        )}
-      </Button>
+    <Card className="h-full glass-effect border-border/50 shadow-lg hover:shadow-xl animate-smooth">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 text-2xl">
+          <Sparkles className="h-5 w-5 text-primary" />
+          Inserisci il tuo prompt
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Textarea
+          placeholder="Scrivi qui cosa vuoi generare..."
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          className="min-h-[300px] resize-none text-base bg-background/50 border-border/50 focus:border-primary animate-smooth rounded-xl"
+        />
+        <Button 
+          onClick={handleGenerate} 
+          disabled={isGenerating || !prompt.trim()}
+          className="w-full rounded-full h-12 text-base font-medium hover:scale-[1.02] active:scale-[0.98] animate-smooth shadow-md"
+        >
+          {isGenerating ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Generazione in corso...
+            </>
+          ) : (
+            <>
+              <Sparkles className="mr-2 h-5 w-5" />
+              Genera
+            </>
+          )}
+        </Button>
+      </CardContent>
     </Card>
   );
 };

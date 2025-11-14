@@ -1,8 +1,8 @@
-import { Card } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileText, Save } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Download, Save, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface OutputPanelProps {
   generatedText: string;
@@ -10,82 +10,78 @@ interface OutputPanelProps {
 
 const OutputPanel = ({ generatedText }: OutputPanelProps) => {
   const handleSave = () => {
-    if (!generatedText) {
-      toast.error("No content to save");
-      return;
-    }
-
-    const existingContent = localStorage.getItem('aurora-saved-content') || '';
-    const timestamp = new Date().toLocaleString();
-    const newContent = `\n\n--- Saved on ${timestamp} ---\n${generatedText}`;
+    if (!generatedText) return;
     
-    localStorage.setItem('aurora-saved-content', existingContent + newContent);
-    toast.success("Content saved locally!");
+    const savedTexts = JSON.parse(localStorage.getItem('aurora-texts') || '[]');
+    savedTexts.push({
+      text: generatedText,
+      timestamp: new Date().toISOString()
+    });
+    localStorage.setItem('aurora-texts', JSON.stringify(savedTexts));
+    toast.success("Testo salvato localmente!");
   };
 
   const handleExport = () => {
-    if (!generatedText) {
-      toast.error("No content to export");
-      return;
-    }
-
+    if (!generatedText) return;
+    
     const blob = new Blob([generatedText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `aurora-export-${Date.now()}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `aurora-text-${Date.now()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success("Content exported!");
+    toast.success("Testo esportato!");
   };
 
   return (
-    <Card className="h-full flex flex-col shadow-md border border-border/50">
-      <div className="p-4 border-b border-border/50 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-primary" />
-          <h3 className="text-lg font-semibold text-foreground">Output</h3>
+    <Card className="h-full glass-effect border-border/50 shadow-lg hover:shadow-xl animate-smooth">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-2xl">
+            <FileText className="h-5 w-5 text-primary" />
+            Risultato
+          </CardTitle>
+          {generatedText && (
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleSave}
+                className="rounded-full hover:scale-105 animate-smooth"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Salva
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleExport}
+                className="rounded-full hover:scale-105 animate-smooth"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Esporta
+              </Button>
+            </div>
+          )}
         </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={handleSave}
-            variant="outline"
-            size="sm"
-            className="border-border/50 hover:bg-secondary transition-all duration-300"
-            disabled={!generatedText}
-          >
-            <Save className="h-4 w-4 mr-2" />
-            Save
-          </Button>
-          <Button
-            onClick={handleExport}
-            variant="outline"
-            size="sm"
-            className="border-border/50 hover:bg-secondary transition-all duration-300"
-            disabled={!generatedText}
-          >
-            Export
-          </Button>
-        </div>
-      </div>
-      
-      <ScrollArea className="flex-1 p-6">
-        {generatedText ? (
-          <div className="prose prose-stone max-w-none">
-            <p className="whitespace-pre-wrap text-foreground leading-relaxed">
+      </CardHeader>
+      <CardContent className="flex-1 flex flex-col min-h-0">
+        <ScrollArea className="flex-1 rounded-xl border border-border/50 p-6 bg-background/50 min-h-[300px]">
+          {generatedText ? (
+            <div className="whitespace-pre-wrap text-base leading-relaxed animate-fade-in">
               {generatedText}
-            </p>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-muted-foreground text-center">
-              Generated content will appear here...
-            </p>
-          </div>
-        )}
-      </ScrollArea>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
+              <FileText className="h-12 w-12 opacity-20" />
+              <p className="text-sm">Il testo generato apparirà qui</p>
+            </div>
+          )}
+        </ScrollArea>
+      </CardContent>
     </Card>
   );
 };

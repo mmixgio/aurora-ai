@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import TextGenerator from "@/components/TextGenerator";
+import ImageGenerator from "@/components/ImageGenerator";
 import OutputPanel from "@/components/OutputPanel";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +39,12 @@ const Index = () => {
     setGeneratedText(text);
   };
 
+  const handleImageGenerated = (imageUrl: string) => {
+    const savedImages = JSON.parse(localStorage.getItem('aurora-images') || '[]');
+    savedImages.push({ url: imageUrl, timestamp: new Date().toISOString() });
+    localStorage.setItem('aurora-images', JSON.stringify(savedImages));
+  };
+
   if (!user) {
     return null;
   }
@@ -54,15 +61,16 @@ const Index = () => {
               Crea con l'AI
             </h1>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Genera testo intelligente con Aurora, il tuo assistente creativo AI
+              Genera testo e immagini con Aurora, il tuo assistente creativo AI
             </p>
           </div>
 
           {/* Two Column Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in">
             {/* Left Column - Input */}
-            <div className="flex flex-col">
+            <div className="space-y-6 flex flex-col">
               <TextGenerator onTextGenerated={handleTextGenerated} />
+              <ImageGenerator onImageGenerated={handleImageGenerated} />
             </div>
 
             {/* Right Column - Output */}

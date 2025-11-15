@@ -1,73 +1,110 @@
-# Welcome to your Lovable project
+# 🌌 Aurora AI – Web App di Generazione Testi e Immagini  
+Sviluppata interamente da **Giovanni Maffei**
 
-## Project info
+---
 
-**URL**: https://lovable.dev/projects/1632cbc1-dcc2-4626-ba9d-bd97b14972d1
+## ✨ Introduzione
+**Aurora AI** è una web app moderna e intuitiva progettata per offrire a chiunque la possibilità di generare **testi**, **immagini** e **contenuti creativi** con una precisione sorprendente.  
+Si distingue per essere:
 
-## How can I edit this code?
+- **Totalmente gratuita**
+- **Senza limiti di utilizzo**
+- Capace di generare contenuti testuali complessi
+- Capace di creare immagini dettagliate e personalizzate
+- Basata su uno stack tecnologico moderno e ad alte prestazioni
 
-There are several ways of editing your application.
+Aurora AI è pensata per studenti, creatori di contenuti, programmatori e chiunque voglia sfruttare l’IA senza costi o barriere.
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/1632cbc1-dcc2-4626-ba9d-bd97b14972d1) and start prompting.
+## 🤖 Confronto tra Aurora AI, ChatGPT e altre IA
 
-Changes made via Lovable will be committed automatically to this repo.
+### **🔹 ChatGPT**
+- Altissima precisione nei testi  
+- Modelli molto avanzati  
+- Generazione immagini presente ma limitata  
+- Versione gratuita con molti limiti  
+- Le funzioni migliori sono a pagamento  
 
-**Use your preferred IDE**
+### **🔹 Altre IA (Gemini, Copilot, Claude, ecc.)**
+- Buona comprensione linguistica  
+- Generazione immagini discreta o assente  
+- Molte funzioni bloccate senza abbonamento  
+- Limiti giornalieri e restrizioni  
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### **⭐ Aurora AI – Cosa la rende diversa**
+Aurora AI si distingue perché:
 
-Follow these steps:
+- **È completamente gratuita**, senza abbonamenti premium
+- **Non ha limiti di utilizzo**
+- Puoi generare **testi professionali**, **racconti**, **codice**, **spiegazioni**, **post social**, **descrizioni**, ecc.
+- Produce **immagini realistiche**, dettagliate e creative
+- L’output è estremamente preciso — a volte *fin troppo*, e può capitare che sbagli proprio perché cerca una precisione massima
+- Interfaccia moderna, veloce e minimale
+- Perfetta anche per utenti non esperti
+
+Aurora AI punta soprattutto su **accessibilità illimitata** + **qualità alta**, cosa che pochi strumenti offrono gratuitamente.
+
+---
+
+## 🧩 Funzionalità Principali
+
+### **🔸 Generazione Testi**
+- Risposte complesse e strutturate  
+- Articoli, email, saggi, descrizioni, riassunti  
+- Codice per diversi linguaggi di programmazione  
+- Traduzioni e semplificazioni  
+- Capacità di mantenere contesto e coerenza  
+
+### **🔸 Generazione Immagini**
+- Stili realistici, digital art, minimal, cartoon, futuristico  
+- Generazione veloce e senza limiti  
+- Possibilità di creare immagini uniche per portfolio, social, lavori scolastici o creativi  
+
+### **🔸 Interfaccia**
+- Design chiaro, elegante e intuitivo  
+- Modalità responsive  
+- Prestazioni elevate grazie alla tecnologia Vite  
+
+### **🔸 Accesso Senza Barriere**
+- Nessuna iscrizione obbligatoria  
+- Nessun pagamento  
+- Nessun limite giornaliero  
+
+---
+
+## 🛠️ Stack Tecnologico
+
+Aurora AI è costruita con:
+
+- **Vite**
+- **React**
+- **TypeScript**
+- **Tailwind CSS**
+- **shadcn/ui**
+- API AI integrate per testi e immagini
+
+Uno stack veloce, leggero, moderno e facilmente scalabile.
+
+---
+
+## 🛠 Come modificare il codice
+
+### **1. Sviluppo in locale**
+
+Installare **Node.js** e **npm**, poi:
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+# 1. Clona il repository
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
+# 2. Accedi alla cartella del progetto
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
-npm i
+# 3. Installa le dipendenze
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# 4. Avvia il server
 npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/1632cbc1-dcc2-4626-ba9d-bd97b14972d1) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)

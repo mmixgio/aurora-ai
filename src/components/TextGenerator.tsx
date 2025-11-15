@@ -31,6 +31,18 @@ const TextGenerator = ({ onTextGenerated }: TextGeneratorProps) => {
 
       const generatedText = data?.generatedText || data?.text || "";
       onTextGenerated(generatedText);
+      
+      // Save to database
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('generations').insert({
+          user_id: user.id,
+          type: 'text',
+          prompt,
+          result: generatedText
+        });
+      }
+      
       toast.success("Testo generato con successo!");
     } catch (error) {
       console.error('Error generating text:', error);

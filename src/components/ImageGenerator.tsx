@@ -33,6 +33,18 @@ const ImageGenerator = ({ onImageGenerated }: ImageGeneratorProps) => {
       if (data?.imageUrl) {
         setGeneratedImage(data.imageUrl);
         onImageGenerated(data.imageUrl);
+        
+        // Save to database
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from('generations').insert({
+            user_id: user.id,
+            type: 'image',
+            prompt,
+            image_url: data.imageUrl
+          });
+        }
+        
         toast.success("Immagine generata con successo!");
       } else {
         throw new Error("Nessuna immagine generata");

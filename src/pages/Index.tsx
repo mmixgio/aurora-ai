@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import TextGenerator from "@/components/TextGenerator";
 import ImageGenerator from "@/components/ImageGenerator";
 import OutputPanel from "@/components/OutputPanel";
+import GenerationsHistory from "@/components/GenerationsHistory";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
@@ -40,9 +41,8 @@ const Index = () => {
   };
 
   const handleImageGenerated = (imageUrl: string) => {
-    const savedImages = JSON.parse(localStorage.getItem('aurora-images') || '[]');
-    savedImages.push({ url: imageUrl, timestamp: new Date().toISOString() });
-    localStorage.setItem('aurora-images', JSON.stringify(savedImages));
+    // Image is now saved in database by ImageGenerator component
+    console.log('Image generated:', imageUrl);
   };
 
   if (!user) {
@@ -65,17 +65,22 @@ const Index = () => {
             </p>
           </div>
 
-          {/* Two Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in">
+          {/* Three Column Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
             {/* Left Column - Input */}
             <div className="space-y-6 flex flex-col">
               <TextGenerator onTextGenerated={handleTextGenerated} />
               <ImageGenerator onImageGenerated={handleImageGenerated} />
             </div>
 
-            {/* Right Column - Output */}
+            {/* Middle Column - Output */}
             <div className="flex flex-col">
               <OutputPanel generatedText={generatedText} />
+            </div>
+
+            {/* Right Column - History */}
+            <div className="flex flex-col">
+              <GenerationsHistory />
             </div>
           </div>
         </div>

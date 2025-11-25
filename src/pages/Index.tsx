@@ -50,36 +50,40 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5 flex flex-col">
       <Navbar />
       
-      <main className="container mx-auto px-6 py-12 flex-1">
-        <div className="max-w-7xl mx-auto">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 flex-1">
+        <div className="max-w-[1600px] mx-auto">
           {/* Header */}
-          <div className="text-center mb-12 animate-fade-in">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
+          <div className="text-center mb-8 sm:mb-12 lg:mb-16 animate-fade-in">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-3 sm:mb-4 bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text text-transparent hover:scale-[1.02] transition-transform duration-300">
               Crea con l'AI
             </h1>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="text-muted-foreground text-base sm:text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
               Genera testo e immagini con Aurora, il tuo assistente creativo AI
             </p>
           </div>
 
           {/* Three Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8 animate-fade-in">
             {/* Left Column - Input */}
-            <div className="space-y-6 flex flex-col">
-              <TextGenerator onTextGenerated={handleTextGenerated} />
-              <ImageGenerator onImageGenerated={handleImageGenerated} />
+            <div className="lg:col-span-4 space-y-4 sm:space-y-6">
+              <div className="transform hover:scale-[1.01] transition-all duration-300">
+                <TextGenerator onTextGenerated={handleTextGenerated} />
+              </div>
+              <div className="transform hover:scale-[1.01] transition-all duration-300">
+                <ImageGenerator onImageGenerated={handleImageGenerated} />
+              </div>
             </div>
 
             {/* Middle Column - Output */}
-            <div className="flex flex-col">
+            <div className="lg:col-span-5 transform hover:scale-[1.01] transition-all duration-300">
               <OutputPanel generatedText={generatedText} />
             </div>
 
             {/* Right Column - History */}
-            <div className="flex flex-col">
+            <div className="lg:col-span-3 transform hover:scale-[1.01] transition-all duration-300">
               <GenerationsHistory />
             </div>
           </div>

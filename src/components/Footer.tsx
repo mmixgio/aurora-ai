@@ -12,6 +12,9 @@ const Footer = () => {
           <p className="text-xs text-muted-foreground text-center">
             AI Creative Workspace - {new Date().getFullYear()}
           </p>
+          <p className="text-xs text-muted-foreground text-center">
+            Made by Giovanni Maffei
+          </p>
         </div>
       </div>
     </footer>

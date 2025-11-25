@@ -53,33 +53,35 @@ const TextGenerator = ({ onTextGenerated }: TextGeneratorProps) => {
   };
 
   return (
-    <Card className="h-full glass-effect border-border/50 shadow-lg hover:shadow-xl animate-smooth">
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 text-2xl">
-          <Sparkles className="h-5 w-5 text-primary" />
+    <Card className="h-full glass-effect border-border/50 shadow-lg hover:shadow-2xl transition-all duration-500 hover:border-primary/30 group">
+      <CardHeader className="pb-3 sm:pb-4 space-y-1">
+        <CardTitle className="flex items-center gap-2 text-xl sm:text-2xl group-hover:text-primary transition-colors duration-300">
+          <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-all duration-300 group-hover:scale-110">
+            <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+          </div>
           Inserisci il tuo prompt
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 sm:space-y-4">
         <Textarea
           placeholder="Scrivi qui cosa vuoi generare..."
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          className="min-h-[300px] resize-none text-base bg-background/50 border-border/50 focus:border-primary animate-smooth rounded-xl"
+          className="min-h-[200px] sm:min-h-[300px] resize-none text-sm sm:text-base bg-background/50 border-border/50 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-300 rounded-xl hover:bg-background/70"
         />
         <Button 
           onClick={handleGenerate} 
           disabled={isGenerating || !prompt.trim()}
-          className="w-full rounded-full h-12 text-base font-medium hover:scale-[1.02] active:scale-[0.98] animate-smooth shadow-md"
+          className="w-full rounded-full h-11 sm:h-12 text-sm sm:text-base font-medium hover:scale-105 active:scale-95 transition-all duration-300 shadow-md hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
         >
           {isGenerating ? (
             <>
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
               Generazione in corso...
             </>
           ) : (
             <>
-              <Sparkles className="mr-2 h-5 w-5" />
+              <Sparkles className="mr-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:rotate-12 transition-transform duration-300" />
               Genera
             </>
           )}

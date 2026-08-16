@@ -34,7 +34,7 @@ struct FaceIDRingView: View {
         .shadow(color: Theme.faceID.opacity(0.55), radius: pulse ? 12 : 5)
         .scaleEffect(isActive ? (pulse ? 1.06 : 0.97) : 0.6)
         .opacity(isActive ? 1 : 0)
-        .animation(.smooth(duration: 0.35), value: isActive)
+        .animation(Motion.detail, value: isActive)
         .onAppear { startAnimating() }
         .onChange(of: isActive) { _, nowActive in
             if nowActive { startAnimating() }

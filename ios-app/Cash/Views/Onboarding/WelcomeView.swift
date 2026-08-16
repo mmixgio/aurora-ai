@@ -85,7 +85,7 @@ struct PrimaryButtonStyle: ButtonStyle {
                 Capsule().fill(isEnabled ? Color.white : Color.white.opacity(0.10))
             )
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(.smooth(duration: 0.18), value: configuration.isPressed)
+            .animation(Motion.press, value: configuration.isPressed)
     }
 }
 
@@ -101,6 +101,6 @@ struct SecondaryButtonStyle: ButtonStyle {
             )
             .overlay(Capsule().strokeBorder(Theme.hairline, lineWidth: 1))
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(.smooth(duration: 0.18), value: configuration.isPressed)
+            .animation(Motion.press, value: configuration.isPressed)
     }
 }

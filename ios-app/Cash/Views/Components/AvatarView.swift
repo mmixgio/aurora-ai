@@ -31,7 +31,7 @@ struct AvatarView: View {
                 .blur(radius: 3)
         }
         .shadow(color: .white.opacity(isHighlighted ? 0.35 : 0), radius: 18)
-        .animation(.smooth(duration: 0.4), value: isHighlighted)
+        .animation(Motion.phase, value: isHighlighted)
     }
 
     /// Il fondo delle iniziali non è mai lo stesso grigio: la tinta viene dal

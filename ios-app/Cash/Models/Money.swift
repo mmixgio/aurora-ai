@@ -23,6 +23,19 @@ struct Money: Equatable, Hashable, Codable {
     var units: Int { cents / 100 }
     var fraction: Int { abs(cents % 100) }
 
+    /// L'importo nel tipo che PassKit richiede.
+    ///
+    /// Si costruisce dai centesimi con esponente -2, senza passare da
+    /// `Double`: convertire in virgola mobile e tornare indietro è
+    /// esattamente il modo in cui 20,00 diventa 19,999999.
+    var decimalNumber: NSDecimalNumber {
+        NSDecimalNumber(
+            mantissa: UInt64(abs(cents)),
+            exponent: -2,
+            isNegative: cents < 0
+        )
+    }
+
     /// `$20` se è un importo tondo, `$20.50` altrimenti — come nel video,
     /// dove i decimali compaiono solo quando servono davvero.
     func formatted(currency: Currency = AppConfiguration.currency) -> String {
@@ -52,6 +65,24 @@ struct Money: Equatable, Hashable, Codable {
             out.append(digit)
         }
         return String(out)
+    }
+}
+
+/// Quale parte dell'importo stanno regolando i tasti del volume.
+///
+/// Toccare la parte decimale sposta qui la selezione: da quel momento un
+/// colpo di volume vale un centesimo invece di un euro. È l'unico modo per
+/// inserire i centesimi senza rimettere a schermo un tastierino.
+enum AmountField: Equatable {
+    case units
+    case cents
+
+    /// Di quanti centesimi si muove l'importo a ogni pressione.
+    var stepInCents: Int {
+        switch self {
+        case .units: return 100
+        case .cents: return 1
+        }
     }
 }
 
@@ -99,13 +130,16 @@ enum Currency: String, Codable, CaseIterable {
 /// Le poche costanti che definiscono "che app è questa".
 enum AppConfiguration {
 
-    /// La valuta mostrata ovunque. Metti `.eur` per avere € al posto di $.
-    static let currency: Currency = .cad
+    /// La valuta mostrata ovunque. Metti `.cad` per tornare al dollaro del
+    /// video: simbolo, codice sulla banconota e separatori seguono da soli.
+    static let currency: Currency = .eur
 
     /// Il tetto per singolo pagamento. Serve a evitare che uno zero di troppo
     /// digitato per sbaglio diventi un pagamento da cinquantamila.
     static let maximumPayment = Money(units: 5_000)
 
-    /// Quante cifre può digitare al massimo il tastierino.
-    static let maximumDigits = 7
+    /// Il passo minimo dell'importo quando si tiene premuto il tasto del
+    /// volume cresce fino a questo moltiplicatore, così arrivare a 200 €
+    /// non richiede duecento pressioni.
+    static let maximumStepMultiplier = 10
 }

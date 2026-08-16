@@ -15,7 +15,7 @@ struct RootView: View {
                     .transition(.opacity)
             }
         }
-        .animation(.smooth(duration: 0.5), value: appState.isReadyToPay)
+        .animation(Motion.phase, value: appState.isReadyToPay)
         .preferredColorScheme(.dark)
         .tint(.white)
     }

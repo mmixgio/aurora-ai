@@ -13,14 +13,17 @@ enum BiometricService {
         case faceID
         case touchID
         case passcodeOnly
-        case none
+        /// Nessuna forma di autenticazione configurata sul dispositivo.
+        /// Non si chiama `none` di proposito: un caso con quel nome manda
+        /// in confusione il compilatore con `Optional.none`.
+        case unavailable
 
         var label: String {
             switch self {
             case .faceID: return "Face ID"
             case .touchID: return "Touch ID"
             case .passcodeOnly: return "Codice"
-            case .none: return "Nessuna autenticazione"
+            case .unavailable: return "Nessuna autenticazione"
             }
         }
     }
@@ -55,7 +58,7 @@ enum BiometricService {
         if context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) {
             return .passcodeOnly
         }
-        return .none
+        return .unavailable
     }
 
     /// Chiede l'autenticazione e restituisce solo se è andata a buon fine.

@@ -63,7 +63,7 @@ struct HomeView: View {
                 // Fa scorrere le cifre invece di sostituirle di colpo quando
                 // il saldo cambia dopo un pagamento.
                 .contentTransition(.numericText())
-                .animation(.smooth(duration: 0.5), value: appState.balance)
+                .animation(Motion.phase, value: appState.balance)
         }
         .padding(.top, 12)
     }

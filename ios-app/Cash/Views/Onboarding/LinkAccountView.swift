@@ -77,7 +77,7 @@ struct LinkAccountView: View {
                             .transition(.opacity)
                     }
                 }
-                .animation(.smooth(duration: 0.25), value: validation)
+                .animation(Motion.detail, value: validation)
 
                 disclaimer
 

@@ -101,7 +101,7 @@ struct TransactionRow: View {
         .contentShape(Rectangle())
         .contextMenu {
             Button(role: .destructive) {
-                withAnimation(.smooth(duration: 0.3)) {
+                withAnimation(Motion.detail) {
                     appState.deleteTransaction(transaction)
                 }
             } label: {

@@ -11,32 +11,50 @@
                ReferencedContainer = "container:Cash.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry buildForTesting = "YES" buildForRunning = "NO" buildForProfiling = "NO" buildForArchiving = "NO" buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "2885AA69BC4664014A792D08"
+               BuildableName = "CashTests.xctest"
+               BlueprintName = "CashTests"
+               ReferencedContainer = "container:Cash.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction buildConfiguration = "Debug" selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
+         <TestableReference skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "2885AA69BC4664014A792D08"
+               BuildableName = "CashTests.xctest"
+               BlueprintName = "CashTests"
+               ReferencedContainer = "container:Cash.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction buildConfiguration = "Debug" selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB" launchStyle = "0" useCustomWorkingDirectory = "NO" ignoresPersistentStateOnLaunch = "NO" debugDocumentVersioning = "YES" debugServiceExtension = "internal" allowLocationSimulation = "YES">
       <BuildableProductRunnable runnableDebuggingMode = "0">
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "F9E3422B9C50B9901A80248A"
-            BuildableName = "Cash.app"
-            BlueprintName = "Cash"
-            ReferencedContainer = "container:Cash.xcodeproj">
-         </BuildableReference>
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "F9E3422B9C50B9901A80248A"
+               BuildableName = "Cash.app"
+               BlueprintName = "Cash"
+               ReferencedContainer = "container:Cash.xcodeproj">
+            </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
    <ProfileAction buildConfiguration = "Release" shouldUseLaunchSchemeArgsEnv = "YES" savedToolIdentifier = "" useCustomWorkingDirectory = "NO" debugDocumentVersioning = "YES">
       <BuildableProductRunnable runnableDebuggingMode = "0">
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "F9E3422B9C50B9901A80248A"
-            BuildableName = "Cash.app"
-            BlueprintName = "Cash"
-            ReferencedContainer = "container:Cash.xcodeproj">
-         </BuildableReference>
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "F9E3422B9C50B9901A80248A"
+               BuildableName = "Cash.app"
+               BlueprintName = "Cash"
+               ReferencedContainer = "container:Cash.xcodeproj">
+            </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
    <AnalyzeAction buildConfiguration = "Debug">

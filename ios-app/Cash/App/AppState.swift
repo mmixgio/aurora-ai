@@ -1,162 +1,211 @@
 import Foundation
 import SwiftUI
 
-/// Lo stato condiviso dell'app: chi sei, quanto hai, cosa hai mandato.
+/// Un messaggio d'errore da mostrare all'utente.
+struct AppAlert: Identifiable, Equatable {
+    let id = UUID()
+    let title: String
+    let message: String
+}
+
+/// Lo stato condiviso: chi sei, quanto hai, cosa hai mosso.
 ///
-/// Una sola istanza, creata all'avvio e passata a tutte le schermate
-/// tramite `@EnvironmentObject`.
+/// Una sola istanza, creata all'avvio e passata alle schermate via
+/// `@EnvironmentObject`. Non conosce Keychain, Contacts né LocalAuthentication:
+/// parla solo con i servizi, che a loro volta parlano con i framework.
 @MainActor
 final class AppState: ObservableObject {
 
-    /// Il conto collegato. Finché è `nil` l'app non lascia pagare.
+    // MARK: - Stato pubblicato
+
     @Published private(set) var account: BankAccount?
+    @Published private(set) var transactions: [Transaction] = []
+    @Published private(set) var balance: Money = .zero
+    @Published private(set) var signature: String = UserSignature.fallback
+    @Published private(set) var hasCompletedOnboarding = false
 
-    @Published private(set) var balance: Money
-    @Published private(set) var transactions: [Transaction]
+    /// L'errore da mostrare. Nessuna vista costruisce messaggi da sé.
+    @Published var alert: AppAlert?
 
-    /// La firma stampata sulla banconota (`@BENGIANNIS` nel video).
-    @Published var handle: String {
-        didSet { Store.saveHandle(handle) }
+    // MARK: - Dipendenze
+
+    private let ledger: TransactionStore
+    private let secureStore: SecureStoring
+    private let persistence: LocalPersisting
+
+    private enum SecureKey {
+        static let account = "cash.bank-account"
     }
 
-    /// Diventa `true` quando il conto è collegato la prima volta.
-    @Published var hasOnboarded: Bool {
-        didSet { Store.hasOnboarded = hasOnboarded }
+    init(
+        persistence: LocalPersisting = LocalStore(),
+        secureStore: SecureStoring = KeychainStore()
+    ) {
+        self.persistence = persistence
+        self.secureStore = secureStore
+        self.ledger = TransactionStore(persistence: persistence)
+
+        loadAccount()
+        refreshFromLedger()
+
+        self.signature = persistence.loadSignature()
+
+        // Il conto vive nel Portachiavi con `ThisDeviceOnly`, quindi dopo un
+        // ripristino da backup può non esserci più anche se le preferenze
+        // dicono che l'onboarding era stato fatto. Senza coordinate l'app non
+        // ha nulla a cui agganciare i pagamenti: si rifà.
+        self.hasCompletedOnboarding = persistence.loadOnboardingCompleted() && account != nil
+
+        if let loadError = ledger.loadError {
+            alert = AppAlert(title: "Storico non leggibile", message: loadError.message)
+        }
     }
 
-    init() {
-        let savedAccount = Store.loadAccount()
-        self.account = savedAccount
-        self.balance = Store.loadBalance()
-        self.transactions = Store.loadTransactions()
-        self.handle = Store.loadHandle()
-
-        // Se il conto è sparito dal Portachiavi (capita ripristinando il
-        // telefono da un backup), l'onboarding va rifatto: senza coordinate
-        // l'app non ha niente a cui agganciare i pagamenti.
-        self.hasOnboarded = Store.hasOnboarded && savedAccount != nil
-    }
-
-    var isReadyToPay: Bool {
-        account != nil && hasOnboarded
-    }
+    var isReadyToPay: Bool { account != nil && hasCompletedOnboarding }
 
     // MARK: - Conto
 
-    func link(account: BankAccount) {
-        self.account = account
-        Store.saveAccount(account)
-        hasOnboarded = true
+    private func loadAccount() {
+        do {
+            account = try secureStore.load(BankAccount.self, for: SecureKey.account)
+        } catch KeychainError.notFound {
+            account = nil
+        } catch {
+            account = nil
+            // Un Portachiavi illeggibile non deve impedire l'avvio, ma non va
+            // nemmeno passato sotto silenzio: l'utente dovrà ricollegare.
+            alert = AppAlert(
+                title: "Conto non recuperato",
+                message: (error as? KeychainError)?.message ?? "Ricollega il conto."
+            )
+        }
+    }
+
+    func link(account newAccount: BankAccount) {
+        do {
+            try secureStore.save(newAccount, for: SecureKey.account)
+        } catch {
+            alert = AppAlert(
+                title: "Conto non salvato",
+                message: (error as? KeychainError)?.message ?? "Riprova."
+            )
+            return
+        }
+
+        account = newAccount
+        hasCompletedOnboarding = true
+        persistence.store(onboardingCompleted: true)
+
+        // La firma parte dall'intestatario, così la prima banconota ha già il
+        // nome giusto sopra. Una firma scelta a mano non viene sovrascritta.
+        if signature == UserSignature.fallback {
+            updateSignature(newAccount.suggestedSignature)
+        }
     }
 
     func unlinkAccount() {
+        do {
+            try secureStore.delete(SecureKey.account)
+        } catch {
+            alert = AppAlert(
+                title: "Conto non rimosso",
+                message: (error as? KeychainError)?.message ?? "Riprova."
+            )
+            return
+        }
         account = nil
-        hasOnboarded = false
-        Store.removeAccount()
+        hasCompletedOnboarding = false
+        persistence.store(onboardingCompleted: false)
     }
 
-    // MARK: - Pagamenti
+    // MARK: - Firma
 
-    /// Cosa può impedire a un pagamento di partire, prima ancora del Face ID.
-    enum PaymentIssue: LocalizedError {
-        case noAccount
-        case zeroAmount
-        case overLimit(Money)
-        case insufficientFunds
-
-        var errorDescription: String? {
-            switch self {
-            case .noAccount:
-                return "Collega prima un conto"
-            case .zeroAmount:
-                return "Inserisci un importo"
-            case .overLimit(let maximum):
-                return "Il massimo per pagamento è \(maximum.formatted())"
-            case .insufficientFunds:
-                return "Saldo non sufficiente"
-            }
-        }
+    func updateSignature(_ raw: String) {
+        let normalized = UserSignature.normalize(raw)
+        signature = normalized
+        persistence.store(signature: normalized)
     }
 
-    func validate(amount: Money) -> PaymentIssue? {
-        guard account != nil else { return .noAccount }
-        guard amount.cents > 0 else { return .zeroAmount }
-        guard amount.cents <= AppConfiguration.maximumPayment.cents else {
-            return .overLimit(AppConfiguration.maximumPayment)
-        }
-        guard amount.cents <= balance.cents else { return .insufficientFunds }
-        return nil
+    // MARK: - Movimenti
+
+    /// Verifica un importo **prima** dell'autenticazione: non ha senso
+    /// chiedere il viso per poi scoprire che il saldo non basta.
+    func validate(amount: Money) -> String? {
+        guard account != nil else { return "Collega prima un conto" }
+        return ledger.validatePayment(amount: amount)?.message
     }
 
-    /// Registra il pagamento e aggiorna il saldo.
+    /// Registra un pagamento già autorizzato.
     ///
-    /// Da chiamare **solo dopo** che il Face ID è andato a buon fine.
+    /// Chiamata **solo dopo** che l'autenticazione è riuscita e l'animazione è
+    /// arrivata in fondo: è questo ordine a impedire che un pagamento
+    /// interrotto a metà finisca comunque in contabilità.
     @discardableResult
-    func commitPayment(to contact: Contact, amount: Money, serial: String) -> Transaction {
-        let transaction = Transaction(
-            direction: .sent,
-            counterpartName: contact.fullName,
-            amount: amount,
-            serial: serial
-        )
-
-        transactions.insert(transaction, at: 0)
-        balance = Money(cents: balance.cents - amount.cents)
-
-        persist()
-        return transaction
+    func commit(_ draft: PaymentDraft) -> Result<Transaction, TransactionStore.StoreError> {
+        let transaction = draft.makeTransaction()
+        do {
+            try ledger.record(transaction)
+            refreshFromLedger()
+            return .success(transaction)
+        } catch let error as TransactionStore.StoreError {
+            return .failure(error)
+        } catch {
+            return .failure(.arithmeticOverflow)
+        }
     }
 
-    /// Denaro in entrata. Per ora serve solo alla schermata "Richiedi",
-    /// ma il movimento nello storico è identico a quello in uscita.
+    /// Denaro in entrata.
     @discardableResult
-    func receive(from name: String, amount: Money) -> Transaction {
+    func receive(from name: String, amount: Money) -> Result<Transaction, TransactionStore.StoreError> {
         let transaction = Transaction(
             direction: .received,
             counterpartName: name,
-            amount: amount
+            amount: amount,
+            serial: SerialGenerator.make()
         )
 
-        transactions.insert(transaction, at: 0)
-        balance = Money(cents: balance.cents + amount.cents)
-
-        persist()
-        return transaction
-    }
-
-    func deleteTransaction(_ transaction: Transaction) {
-        transactions.removeAll { $0.id == transaction.id }
-        Store.saveTransactions(transactions)
-    }
-
-    /// Le persone a cui hai mandato denaro più di recente, senza ripetizioni.
-    /// Alimenta la riga di avatar in cima alla home.
-    func recentCounterparts(limit: Int = 8) -> [String] {
-        var seen = Set<String>()
-        var names: [String] = []
-
-        for transaction in transactions {
-            if seen.insert(transaction.counterpartName).inserted {
-                names.append(transaction.counterpartName)
-            }
-            if names.count == limit { break }
+        do {
+            try ledger.record(transaction)
+            refreshFromLedger()
+            return .success(transaction)
+        } catch let error as TransactionStore.StoreError {
+            return .failure(error)
+        } catch {
+            return .failure(.arithmeticOverflow)
         }
-        return names
     }
 
-    private func persist() {
-        Store.saveTransactions(transactions)
-        Store.saveBalance(balance)
+    /// Elimina un movimento. Il saldo è derivato dallo storico, quindi
+    /// togliere una riga ne annulla l'effetto.
+    func deleteTransaction(id: UUID) {
+        do {
+            try ledger.remove(id: id)
+            refreshFromLedger()
+        } catch let error as TransactionStore.StoreError {
+            alert = AppAlert(title: "Movimento non eliminato", message: error.message)
+        } catch {
+            alert = AppAlert(title: "Movimento non eliminato", message: "Riprova.")
+        }
+    }
+
+    func recentCounterparts() -> [String] {
+        ledger.recentCounterparts()
     }
 
     // MARK: - Azzeramento
 
     func resetEverything() {
-        Store.reset()
+        ledger.reset()
+        try? secureStore.delete(SecureKey.account)
+
         account = nil
-        balance = Store.loadBalance()
-        transactions = []
-        handle = Store.loadHandle()
-        hasOnboarded = false
+        hasCompletedOnboarding = false
+        signature = UserSignature.fallback
+        refreshFromLedger()
+    }
+
+    private func refreshFromLedger() {
+        transactions = ledger.transactions
+        balance = ledger.balance
     }
 }

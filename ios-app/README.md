@@ -1,175 +1,210 @@
 # Cash
 
-App iPhone nativa in SwiftUI che ricostruisce la sequenza di pagamento vista
-nel video di riferimento: importo a tutto schermo su nero, conferma, Face ID,
-la banconota che vola dentro l'avatar del destinatario e la spunta finale.
+App iPhone nativa in Swift + SwiftUI. Manda denaro a una persona: scegli chi,
+regoli l'importo con i tasti del volume, confermi, ti autentichi col viso, e
+guardi una banconota volare dentro il suo avatar.
 
 ```
-importo  →  conferma  →  Face ID  →  invio  →  fatto
+importo  →  conferma  →  autenticazione  →  invio  →  fatto
 ```
 
-- **Solo iPhone**, solo verticale, sempre in scuro (`TARGETED_DEVICE_FAMILY = 1`).
-- **Nessun account, nessun server**: saldo e storico stanno sul telefono,
-  le coordinate bancarie nel Portachiavi.
-- **iOS 17.0** o successivo, Swift 5.
+**La contabilità è locale e simulata.** L'app non è collegata a nessun circuito
+bancario, non fa richieste di rete, non ha account né analytics. Face ID,
+rubrica, Portachiavi, validazione IBAN e tasti del volume sono invece reali.
+
+- iOS 17+, Swift 5, **solo iPhone**, solo verticale, sempre in scuro.
+- 57 file sorgente, 10 file di test, nessuna dipendenza esterna.
 
 ---
 
-## Aprirla e installarla sul tuo iPhone
-
-Serve un Mac con Xcode. Non serve l'iscrizione all'Apple Developer Program:
-con un Apple ID normale l'app si installa lo stesso, va solo rifirmata ogni
-7 giorni.
-
-1. Apri `Cash.xcodeproj`.
-2. Seleziona il target **Cash** → scheda **Signing & Capabilities**.
-3. Metti il tuo Apple ID in **Team** (Xcode → Settings → Accounts se non c'è).
-4. Cambia il **Bundle Identifier** in qualcosa di tuo, per esempio
-   `com.tuonome.Cash`: quello di default potrebbe risultare già preso.
-5. Collega l'iPhone, selezionalo come destinazione e premi ⌘R.
-6. Al primo avvio l'iPhone rifiuta l'app: vai in
-   **Impostazioni › Generali › VPN e gestione dispositivo**, tocca il tuo
-   Apple ID e scegli **Autorizza**.
-
-Con l'Apple Developer Program (99 €/anno) la firma dura un anno invece di
-sette giorni. Per un uso personale non serve nient'altro: niente revisione
-di Apple, niente App Store.
-
-> **I tasti del volume vanno provati su un iPhone vero.** Nel simulatore di
-> Xcode non esistono tasti fisici del volume, quindi lì l'importo si regola
-> solo con i pulsanti `−` e `+` a schermo.
-
----
-
-## L'importo si regola con i tasti del volume
-
-Niente tastierino. La cifra è già a schermo e si muove:
-
-| Gesto | Effetto |
-|---|---|
-| Volume **su** | +1 € |
-| Volume **giù** | −1 € |
-| Tocco sui **centesimi** | i tasti passano al passo da 1 centesimo |
-| Tocco sugli **euro** | si torna al passo da 1 € |
-| Tasto **tenuto premuto** | il passo cresce: 1 → 2 → 5 → 10 |
-
-L'accelerazione si azzera appena rallenti o cambi verso, così arrivi in fretta
-sull'ordine di grandezza e poi aggiusti al centesimo. Una sottolineatura
-scivola fra euro e centesimi per dire dove finirà la prossima pressione.
-
-### Come funziona, e cosa può rompersi
-
-iOS **non offre un'API pubblica** per leggere i tasti del volume. L'unica
-eccezione è `AVCaptureEventInteraction`, che però vale solo mentre è attiva
-una sessione della fotocamera.
-
-`Services/VolumeButtonService.swift` usa quindi il meccanismo dei lettori
-musicali e delle app di scatto remoto:
-
-1. osserva `outputVolume` della sessione audio, che cambia a ogni pressione:
-   dal segno del cambiamento si capisce quale tasto è stato premuto;
-2. riporta subito il volume a metà, altrimenti arrivato al massimo o al minimo
-   il tasto smetterebbe di produrre variazioni;
-3. tiene un `MPVolumeView` fuori dallo schermo, che impedisce a iOS di
-   mostrare il riquadro del volume a ogni tocco.
-
-La sessione audio è `.ambient` con `.mixWithOthers`: se stai ascoltando
-qualcosa non viene interrotto. Il volume di sistema viene rimesso com'era
-quando esci dalla schermata.
-
-Due limiti da conoscere. `MPVolumeView` è pubblico ma la sua gerarchia interna
-non è documentata: se una versione futura di iOS la cambiasse, il servizio si
-spegne invece di rompersi, `isListening` diventa `false` e la schermata lo
-dice. Per questo i pulsanti `−` e `+` a schermo ci sono sempre — toglierli
-significa perdere l'unica via di scampo. Sono in `AmountFieldView`, parametro
-`showsControls`.
-
----
-
-## Apple Pay e il doppio clic del tasto laterale
-
-Il doppio clic del tasto di accensione **esiste in un solo posto**: dentro il
-pannello di Apple Pay. Apple lo riserva a sé e non lo consegna a nessuna app,
-quindi l'unico modo di averlo davvero è far comparire quel pannello.
-
-L'app è pronta a farlo. `Services/ApplePayService.swift` usa **PassKit**, che è
-l'equivalente nativo di Apple Pay JS: `PaymentRequest`, `onmerchantvalidation`
-e `validateMerchant` girano dentro Safari, su un sito, e in un'app nativa non
-esistono.
-
-### Cosa serve per accenderlo
-
-| | |
-|---|---|
-| **Apple Developer Program** | 99 €/anno. Con un Apple ID gratuito non si può creare un identificativo commerciante. |
-| **Merchant ID** | Creato nel portale Apple, tipo `merchant.com.tuonome.cash`. Va messo in `ApplePay.merchantIdentifier`. |
-| **Capacità Apple Pay** | In Xcode: target **Cash** → **Signing & Capabilities** → **+ Capability** → **Apple Pay**, poi spunta il merchant ID. |
-| **Gestore dei pagamenti** | Stripe, Adyen, Nexi… è chi riceve il token che Apple restituisce. Senza, il pannello autorizza ma nessun soldo si muove. |
-
-Le prime tre vanno insieme: la capacità Apple Pay genera un entitlement che la
-firma gratuita non sa gestire, quindi aggiungerla senza account a pagamento fa
-smettere di compilare il progetto. O tutte e tre, o nessuna.
-
-C'è anche un vincolo di regolamento da sapere: **Apple Pay serve a pagare un
-esercente**, non a mandare denaro a una persona. Un'app di pagamenti fra privati
-non passerebbe la revisione — irrilevante per un'app installata solo sul proprio
-telefono, ma è giusto averlo chiaro.
-
-### Cosa fa l'app finché non lo accendi
-
-`ApplePay.merchantIdentifier` è vuoto, quindi Apple Pay resta spento e la
-schermata di conferma mostra il pulsante **Conferma pagamento** con il Face ID.
-Funziona oggi, con un Apple ID gratuito, senza entitlement e senza gestore dei
-pagamenti.
-
-Appena metti un merchant ID valido e aggiungi la capacità, quel pulsante
-diventa da solo il pulsante ufficiale di Apple Pay e la conferma passa dal suo
-pannello — doppio clic del tasto laterale compreso. Se il pannello non riesce
-ad aprirsi, l'app ripiega sul Face ID invece di lasciare il pagamento appeso.
-
----
-
----
-
-## Cosa è vero e cosa è simulato
-
-**Vero:** il Face ID (`LocalAuthentication` — senza autenticazione riuscita il
-pagamento non parte), la rubrica (`Contacts`), la validazione IBAN
-(ISO 13616, modulo 97), il salvataggio nel Portachiavi, i tasti del volume.
-
-**Simulato:** il trasferimento di denaro. L'app registra l'IBAN e tiene la
-contabilità, ma non è collegata a nessun circuito bancario — servirebbe un
-istituto di pagamento autorizzato, con licenza, verifica dell'identità e
-antiriciclaggio. Non è una riga di codice che manca.
-
----
-
-## Com'è fatta
+## Architettura
 
 ```
 Cash/
-├── App/              punto di ingresso, stato globale, Info.plist
-├── Design/           colori, tipografia, testi, curve di animazione, vibrazioni
-├── Models/           denaro, contatti, movimenti, conto, macchina a stati
-├── Services/         Face ID, rubrica, tasti volume, Portachiavi, IBAN, salvataggio
-└── Views/
-    ├── Components/   banconota, importo, avatar, anello Face ID, spunta
-    ├── Onboarding/   benvenuto, collegamento del conto
-    ├── Home/         saldo, storico, denaro in entrata
-    └── Pay/          la sequenza del pagamento
+├── App/            CashApp · AppState · AppRouter · RootView
+├── Core/
+│   ├── Models/     Money · Currency · ContactPerson · Transaction ·
+│   │               BankAccount · PaymentDraft · PaymentPhase ·
+│   │               AmountField · UserSignature
+│   ├── Services/   Contacts · Biometric · VolumeButton · ApplePay ·
+│   │               PaymentAuthorizer
+│   ├── Persistence/ LocalStore · TransactionStore
+│   ├── Security/   KeychainStore · IBANValidator
+│   ├── Utilities/  SerialGenerator · StepAccelerator · DeterministicColor ·
+│   │               PaymentClock · Haptics · SystemSettings
+│   └── DesignSystem/ Theme · Motion · Copy
+├── Features/       Onboarding · Home · Payment · Contacts · History · Settings
+├── Components/     Banknote · Avatar · Buttons · Amount · Animations · States
+└── Resources/      Assets.xcassets · Info.plist
+
+CashTests/          9 suite + doppi di test
 ```
 
-Il cuore è `Views/Pay/PaymentView.swift`: le cinque fasi vivono in un unico
-`ZStack`, non in cinque schermate separate. È quello che permette alla
-banconota di essere **un solo oggetto** che sale, si inclina, si rimpicciolisce
-e sparisce dentro l'avatar. Con cinque schermate quel movimento continuo — che
-è poi tutto il senso del design — non ci sarebbe.
+Il flusso delle dipendenze è a senso unico:
 
-Le animazioni stanno tutte in `Design/Motion.swift`, e sono molle e non durate
-fisse: una molla decelera come farebbe un oggetto vero. Ogni tratto ha la sua
-curva — `noteRise` è lenta e pesante perché la banconota deve sembrare che
-entri in campo, `noteFly` è decisa e non rimbalza perché un rimbalzo, nel
-momento in cui il denaro viene assorbito, sembrerebbe un errore.
+```
+View  →  ViewModel  →  Service (protocollo)  →  framework Apple
+```
+
+Nessuna vista importa `Contacts`, `LocalAuthentication`, `AVFoundation`,
+`Security` o `PassKit`. L'unica eccezione è `ApplePayButton`, che **è** per
+definizione un ponte verso UIKit: il pulsante di Apple Pay dev'essere quello
+vero, non una copia disegnata a mano.
+
+Ogni servizio sta dietro un protocollo (`ContactsProviding`,
+`BiometricAuthenticating`, `HardwareVolumeObserving`, `PaymentAuthorizing`,
+`SecureStoring`, `LocalPersisting`, `PaymentClock`). È ciò che permette ai
+test di attraversare l'intera sequenza di pagamento senza Face ID, senza
+rubrica, senza disco e senza attese reali.
+
+---
+
+## Le tre decisioni che reggono tutto
+
+### 1. Il saldo è derivato, non memorizzato
+
+Viene salvato solo il **saldo di partenza**; quello corrente è sempre
+`partenza + somma degli effetti dei movimenti`. Due verità separate — un saldo
+su disco e uno storico accanto — prima o poi divergono dopo un salvataggio
+interrotto. Con una fonte sola la coerenza è garantita dalla struttura, e
+cancellare un movimento riporta il saldo esattamente a com'era.
+
+### 2. Il commit arriva per ultimo
+
+```
+autenticazione riuscita  →  animazione (950 ms)  →  commit
+```
+
+Il movimento viene registrato **solo** dopo che entrambi sono andati a buon
+fine, e il compito è annullabile: se la schermata si chiude a metà volo, in
+contabilità non resta niente. È in `PaymentViewModel.send()`, sotto il
+controllo su `Task.isCancelled`.
+
+### 3. La banconota è un oggetto solo
+
+Le cinque fasi vivono in un unico `ZStack`. Posizione, scala, rotazione e
+opacità sono funzioni della fase (`BanknotePlacement`), e SwiftUI interpola il
+resto. Con cinque schermate separate la banconota sparirebbe e riapparirebbe,
+e tutto il senso del design se ne andrebbe.
+
+Le animazioni sono **molle e non durate fisse** — una molla decelera come un
+oggetto vero. Stanno tutte in `Core/DesignSystem/Motion.swift`.
+
+| Curva | response | damping | Dove |
+|---|---|---|---|
+| `noteRise` | 0,95 | 0,84 | la banconota entra in campo: lenta, pesante |
+| `noteFly` | 0,80 | 0,95 | assorbita dall'avatar: decisa, **zero rimbalzo** |
+| `phase` | 0,60 | 0,86 | i cambi di fase |
+| `value` | 0,28 | 0,80 | l'importo sotto i tasti |
+| `detail` | 0,38 | 0,88 | sottolineature, avvisi |
+
+---
+
+## L'importo senza tastierino
+
+| Gesto | Effetto |
+|---|---|
+| Volume **su** / **giù** | ±1 € |
+| Tocco sui **centesimi** | passo da 1 centesimo |
+| Tocco sugli **euro** | ritorno al passo da 1 € |
+| Tasto **tenuto premuto** | 1 → 2 → 5 → 10 |
+
+L'accelerazione si azzera dopo 0,45 s di pausa o al cambio di verso. Una
+sottolineatura scivola fra euro e centesimi per dire dove finirà la prossima
+pressione. Per VoiceOver è un unico controllo regolabile: scorrendo su e giù
+l'importo si muove come con i tasti fisici.
+
+### Come leggo i tasti, e cosa può rompersi
+
+iOS **non espone i tasti del volume alle app**; l'unica eccezione,
+`AVCaptureEventInteraction`, vale solo con la fotocamera attiva. Il servizio
+osserva `outputVolume` della sessione audio, capisce dal segno quale tasto è
+stato premuto, e riporta il volume a metà — altrimenti al massimo o al minimo
+il tasto smetterebbe di produrre variazioni. Un `MPVolumeView` fuori schermo
+sopprime il riquadro di sistema; la sessione è `.ambient` con `.mixWithOthers`
+per non interrompere la musica, e il volume viene rimesso com'era all'uscita.
+
+È un workaround, e per questo vive in **un solo file** dietro un protocollo.
+La gerarchia interna di `MPVolumeView` non è documentata: se cambiasse,
+`start()` lancia un errore tipizzato, l'app resta utilizzabile con i pulsanti
+`−` e `+`, e la scritta diventa «Usa i pulsanti». Nel simulatore il servizio
+si dichiara subito non disponibile invece di fingere.
+
+---
+
+## Apple Pay
+
+`ApplePayConfiguration.merchantIdentifier` è vuoto, quindi Apple Pay è spento e
+la conferma passa dall'autenticazione locale: funziona oggi, con un Apple ID
+gratuito. Con un merchant ID valido il pulsante diventa da solo il
+`PKPaymentButton` ufficiale e la conferma passa dal pannello di sistema —
+**doppio clic del tasto laterale compreso**, che è l'unico posto in cui quel
+gesto esiste per un'app di terze parti.
+
+Per accenderlo servono, insieme: Apple Developer Program a pagamento, un
+Merchant ID, la capacità Apple Pay sul target (l'entitlement non è gestibile
+dalla firma gratuita) e un gestore dei pagamenti per il token. Apple Pay
+**non** muove il saldo di questa app: autorizza, e la contabilità resta locale.
+
+Il codice che circola con `PaymentRequest` e `onmerchantvalidation` è Apple Pay
+**JS**, cioè Safari: in un'app nativa quelle classi non esistono.
+
+---
+
+## Test
+
+```sh
+xcodebuild test -scheme Cash -destination 'platform=iOS Simulator,name=iPhone 15'
+```
+
+o ⌘U in Xcode. Nove suite: `Money`, `IBANValidator`, `SerialGenerator`,
+`DeterministicColor`, `StepAccelerator`, `TransactionStore`, `AppState`,
+`PaymentStateMachine`, `TransactionFormatting`.
+
+Coprono i casi limite che contano: saldo 0, importo 0, 5.000 € esatti,
+5.000,01 €, saldo insufficiente, transazione duplicata, storico vuoto, storico
+illeggibile, IBAN italiano valido e con checksum rotto, IBAN di paesi con
+lunghezze da 15 a 31 caratteri, autenticazione annullata, commit rifiutato.
+
+### Verifica senza Mac
+
+`tools/verify_core_logic.py` riporta gli algoritmi puri in Python e ci fa
+girare **gli stessi vettori** dei test Swift — 92 controlli su modulo 97,
+aritmetica in centesimi, saturazione, accelerazione, saldo derivato e
+normalizzazione della firma. Serve a validare la logica dove non c'è una
+toolchain Swift; non sostituisce `xcodebuild test`, che va eseguito su un Mac.
+
+---
+
+## Installarla sul tuo iPhone
+
+1. Apri `Cash.xcodeproj`.
+2. Target **Cash** → **Signing & Capabilities** → metti il tuo Apple ID in **Team**.
+3. Cambia il **Bundle Identifier** in qualcosa di tuo (`com.tuonome.Cash`).
+4. Collega l'iPhone — **non il simulatore**, servono i tasti veri — e premi ⌘R.
+5. Al primo avvio: **Impostazioni › Generali › VPN e gestione dispositivo** →
+   tocca il tuo Apple ID → **Autorizza**.
+
+Con un Apple ID gratuito la firma dura 7 giorni; con l'Apple Developer Program
+(99 €/anno) un anno. Nessuna revisione di Apple in entrambi i casi.
+
+---
+
+## Privacy
+
+Nessuna rete. Nessun server, nessuna API, nessun account, nessun analytics,
+nessuna pubblicità, nessun tracciamento.
+
+| Dato | Dove | Protezione |
+|---|---|---|
+| IBAN, intestatario | Portachiavi | `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` |
+| Saldo, storico, firma | `UserDefaults` | non sensibili |
+| Contatti | solo memoria | mai salvati |
+
+Nessun `print` di dati personali, nessuna coordinata bancaria scritta nel
+codice. Poiché il Portachiavi è `ThisDeviceOnly`, dopo un ripristino da backup
+il conto va ricollegato: `AppState` lo rileva e rifà l'onboarding anche se le
+preferenze dicono il contrario.
 
 ---
 
@@ -177,28 +212,28 @@ momento in cui il denaro viene assorbito, sembrerebbe un errore.
 
 | Cosa | Dove |
 |---|---|
-| Accendere Apple Pay | `ApplePay.merchantIdentifier` in `Services/ApplePayService.swift` |
-| Valuta (`€`/`EUR` → `$`/`CAD` del video) | `AppConfiguration.currency` in `Models/Money.swift` |
-| Velocità e rimbalzo di ogni animazione | `Design/Motion.swift` |
-| Testi in italiano → inglese del video | `Copy.usesVideoWording` in `Design/Copy.swift` |
-| Colori, font, misure | `Design/Theme.swift` |
-| Accelerazione dei tasti volume | `PaymentFlow.multiplier(for:)` |
-| Pulsanti `−` / `+` a schermo | `AmountFieldView`, parametro `showsControls` |
-| Firma sulla banconota | dentro l'app, Profilo › Firma |
+| Accendere Apple Pay | `ApplePayConfiguration.merchantIdentifier` |
+| Valuta, saldo iniziale, tetto, limiti | `AppConfiguration` in `Core/Models/Currency.swift` |
+| Curve e tempi delle animazioni | `Core/DesignSystem/Motion.swift` |
+| Colori, tipografia, misure | `Core/DesignSystem/Theme.swift` |
+| Testi in italiano → inglese del video | `Copy.usesVideoWording` |
+| Accelerazione dei tasti | `StepAccelerator.multiplier(forStreak:)` |
+| Pulsanti `−` / `+` a schermo | `AmountView`, parametro `showsControls` |
 | Icona | `tools/make_app_icon.py` |
 
 ---
 
 ## Strumenti
 
-Il progetto Xcode è generato, non scritto a mano. Dopo aver aggiunto o
-rinominato dei file:
+Il progetto Xcode è **generato**, non scritto a mano. Dopo aver aggiunto,
+rinominato o spostato dei file:
 
 ```sh
-python3 tools/generate_xcodeproj.py   # rigenera Cash.xcodeproj
-python3 tools/validate_project.py     # controlla che sia coerente
+python3 tools/generate_xcodeproj.py   # rigenera Cash.xcodeproj (app + test)
+python3 tools/validate_project.py     # verifica riferimenti e file su disco
+python3 tools/verify_core_logic.py    # riesegue i vettori dei test
 python3 tools/make_app_icon.py        # ridisegna l'icona
 ```
 
-Gli identificatori interni derivano dall'hash del percorso, quindi
-rigenerando il progetto non cambiano e il diff su git resta leggibile.
+Gli identificatori interni derivano dall'hash del percorso: rigenerando il
+progetto non cambiano, e il diff su git resta leggibile.
